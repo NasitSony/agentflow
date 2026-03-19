@@ -22,11 +22,15 @@ public class Step {
     @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private StepStatus status;
 
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
+
+    @Column(name = "step_order", nullable = false)
+    private Integer stepOrder;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -41,6 +45,9 @@ public class Step {
         this.updatedAt = now;
         if (this.retryCount == null) {
             this.retryCount = 0;
+        }
+        if (this.status == null) {
+            this.status = StepStatus.PENDING;
         }
     }
 

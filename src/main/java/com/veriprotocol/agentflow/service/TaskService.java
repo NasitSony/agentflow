@@ -3,18 +3,30 @@ package com.veriprotocol.agentflow.service;
 
 import com.veriprotocol.agentflow.dto.CreateTaskRequest;
 import com.veriprotocol.agentflow.dto.TaskResponse;
+import com.veriprotocol.agentflow.dto.StepResponse;
 import com.veriprotocol.agentflow.model.Task;
+import com.veriprotocol.agentflow.model.Step;
 import com.veriprotocol.agentflow.model.TaskStatus;
 import com.veriprotocol.agentflow.repository.TaskRepository;
+import com.veriprotocol.agentflow.repository.StepRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+
 
 @Service
 public class TaskService {
 
-    private final TaskRepository taskRepository;
+	private final TaskRepository taskRepository;
+    private final StepRepository stepRepository;
+    private final OrchestratorService orchestratorService;
 
-    public TaskService(TaskRepository taskRepository) {
+    public TaskService(TaskRepository taskRepository,
+                       StepRepository stepRepository,
+                       OrchestratorService orchestratorService) {
         this.taskRepository = taskRepository;
+        this.stepRepository = stepRepository;
+        this.orchestratorService = orchestratorService;
     }
 
     public TaskResponse createTask(CreateTaskRequest request) {
@@ -23,7 +35,13 @@ public class TaskService {
         task.setStatus(TaskStatus.PENDING);
 
         Task saved = taskRepository.save(task);
-        return toResponse(saved);
+
+        orchestratorService.processTask(saved.getId());
+
+        Task updated = taskRepository.findById(saved.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + saved.getId()));
+
+        return toResponse(updated);
     }
 
     public TaskResponse getTask(Long id) {
@@ -42,6 +60,23 @@ public class TaskService {
                 .retryCount(task.getRetryCount())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
+                .build();
+    }
+    
+    public List<StepResponse> getSteps(Long taskId) {
+        return stepRepository.findByTaskIdOrderByStepOrderAsc(taskId)
+                .stream()
+                .map(this::toStepResponse)
+                .toList();
+    }
+
+    private StepResponse toStepResponse(Step step) {
+        return StepResponse.builder()
+                .id(step.getId())
+                .name(step.getName())
+                .status(step.getStatus())
+                .retryCount(step.getRetryCount())
+                .stepOrder(step.getStepOrder())
                 .build();
     }
 }

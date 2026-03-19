@@ -4,10 +4,13 @@ package com.veriprotocol.agentflow.controller;
 
 import com.veriprotocol.agentflow.dto.CreateTaskRequest;
 import com.veriprotocol.agentflow.dto.TaskResponse;
+import com.veriprotocol.agentflow.dto.StepResponse;
 import com.veriprotocol.agentflow.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/tasks")
@@ -28,5 +31,10 @@ public class TaskController {
     @GetMapping("/{id}")
     public TaskResponse getTask(@PathVariable Long id) {
         return taskService.getTask(id);
+    }
+    
+    @GetMapping("/{id}/steps")
+    public List<StepResponse> getSteps(@PathVariable Long id) {
+        return taskService.getSteps(id);
     }
 }
