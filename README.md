@@ -178,7 +178,7 @@ curl -X POST http://localhost:8080/tasks \
 
 ## 🧠 Key Design Principles
 
-```bash
+
 - **Correctness over convenience**
 - **Explicit state over hidden logic**
 - **Failure is expected, not exceptional**
@@ -189,12 +189,11 @@ curl -X POST http://localhost:8080/tasks \
 
 ## 📌 Future Work
 
-```bash
 - Async execution (queue-based workers)
 - Distributed scheduling
 - LLM-based dynamic planning
 - Human-in-the-loop escalation
-```
+
 
 
 ## 💬 Author
