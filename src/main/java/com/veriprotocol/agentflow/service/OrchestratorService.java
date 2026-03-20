@@ -4,9 +4,11 @@ package com.veriprotocol.agentflow.service;
 import com.veriprotocol.agentflow.model.Step;
 import com.veriprotocol.agentflow.model.StepStatus;
 import com.veriprotocol.agentflow.model.Task;
+import com.veriprotocol.agentflow.model.TaskLog;
 import com.veriprotocol.agentflow.model.TaskStatus;
 import com.veriprotocol.agentflow.repository.StepRepository;
 import com.veriprotocol.agentflow.repository.TaskRepository;
+import com.veriprotocol.agentflow.repository.TaskLogRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +22,17 @@ public class OrchestratorService {
     private final StepRepository stepRepository;
     private final WorkflowPlannerService workflowPlannerService;
     private final StepExecutorService stepExecutorService;
+    private final TaskLogRepository taskLogRepository;
 
     public OrchestratorService(TaskRepository taskRepository,
                                StepRepository stepRepository,
                                WorkflowPlannerService workflowPlannerService,
-                               StepExecutorService stepExecutorService) {
+                               StepExecutorService stepExecutorService, TaskLogRepository taskLogRepository) {
         this.taskRepository = taskRepository;
         this.stepRepository = stepRepository;
         this.workflowPlannerService = workflowPlannerService;
         this.stepExecutorService = stepExecutorService;
+        this.taskLogRepository = taskLogRepository;
     }
 
     @Transactional
@@ -44,13 +48,23 @@ public class OrchestratorService {
 
         task.setStatus(TaskStatus.EXECUTING);
         taskRepository.save(task);
+        
+        
+       
 
         for (Step step : savedSteps) {
+            
+            
             task.setCurrentStep(step.getName());
             taskRepository.save(task);
 
-            step.setStatus(StepStatus.IN_PROGRESS);
-            stepRepository.save(step);
+            boolean success = executeWithRetry(step, task);
+
+            if (!success) {
+                task.setStatus(TaskStatus.FAILED);
+                taskRepository.save(task);
+                return;
+            }
 
             try {
                 stepExecutorService.execute(step.getName(), task.getGoal());
@@ -84,5 +98,63 @@ public class OrchestratorService {
         }
 
         return stepRepository.saveAll(steps);
+    }
+    
+    private boolean executeWithRetry(Step step, Task task) {
+        int maxRetries = 3;
+
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+
+            step.setStatus(StepStatus.IN_PROGRESS);
+            step.setRetryCount(attempt - 1);
+            stepRepository.save(step);
+            log(task.getId(), step.getName(), "START", "Attempt " + attempt);
+
+            try {
+                stepExecutorService.execute(step.getName(), task.getGoal());
+
+                step.setStatus(StepStatus.COMPLETED);
+                stepRepository.save(step);
+                
+                log(task.getId(), step.getName(), "SUCCESS", "Completed");
+                
+                return true;
+
+            } catch (Exception e) {
+
+                step.setStatus(StepStatus.FAILED);
+                step.setRetryCount(attempt);
+                stepRepository.save(step);
+                
+
+                if (attempt == maxRetries) {
+                	log(task.getId(), step.getName(), "FAIL", e.getMessage());
+                    return false;
+                }
+
+                log(task.getId(), step.getName(), "RETRIES", e.getMessage());
+                backoff(attempt);
+            }
+        }
+
+        return false;
+    }
+    
+    private void backoff(int attempt) {
+        try {
+            Thread.sleep(500L * attempt); // simple exponential-ish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    private void log(Long taskId, String step, String status, String message) {
+        TaskLog log = new TaskLog();
+        log.setTaskId(taskId);
+        log.setStepName(step);
+        log.setStatus(status);
+        log.setMessage(message);
+        taskLogRepository.save(log);
     }
 }

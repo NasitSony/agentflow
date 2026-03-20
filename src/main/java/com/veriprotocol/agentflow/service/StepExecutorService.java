@@ -6,16 +6,21 @@ import org.springframework.stereotype.Service;
 @Service
 public class StepExecutorService {
 
+   
     public void execute(String stepName, String goal) {
-        System.out.println("Executing step: " + stepName + " for goal: " + goal);
+    	
+    	if ("send_email".equals(stepName) && Math.random() < 0.3) {
+    	    throw new RuntimeException("Simulated failure in send_email");
+    	}
 
-        // Mock execution for now
-        switch (stepName) {
-            case "generate_summary" -> simulateWork();
-            case "send_email" -> simulateWork();
-            case "analyze_goal" -> simulateWork();
-            case "store_result" -> simulateWork();
-            default -> throw new IllegalArgumentException("Unknown step: " + stepName);
+        long start = System.currentTimeMillis();
+
+        simulateWork();
+
+        long duration = System.currentTimeMillis() - start;
+
+        if (duration > 1000) {
+            throw new RuntimeException("Step timeout");
         }
     }
 
