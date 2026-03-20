@@ -2,6 +2,7 @@
 
 ```markdown
 > Treating agent workflows as distributed systems with failure modes, not black-box automation.
+```
 
 AgentFlow is a production-style backend system that executes multi-step workflows with explicit state transitions, failure handling, and deterministic recovery.
 
