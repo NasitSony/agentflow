@@ -1,5 +1,8 @@
 # AgentFlow — Failure-Aware Workflow Orchestrator
 
+```markdown
+> Treating agent workflows as distributed systems with failure modes, not black-box automation.
+
 AgentFlow is a production-style backend system that executes multi-step workflows with explicit state transitions, failure handling, and deterministic recovery.
 
 It is designed to model **reliable execution of agent-like workflows**, where each step may fail, retry, or require escalation.
