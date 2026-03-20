@@ -98,7 +98,7 @@ GET /tasks/{id}/steps
 
 Input:
 
-```bash
+```JSON
 {
   "goal": "generate summary and send email"
 }
@@ -151,7 +151,7 @@ docker run --name agentflow-postgres \
 
 ### 2. Configure application.yml
 
-```bash
+```YAML
 spring:
   datasource:
     url: jdbc:postgresql://127.0.0.1:5440/agentflow
@@ -179,10 +179,10 @@ curl -X POST http://localhost:8080/tasks \
 ## 🧠 Key Design Principles
 
 ```bash
-- Correctness over convenience
-- Explicit state over hidden logic
-- Failure is expected, not exceptional
-- Deterministic recovery over best-effort execution
+- **Correctness over convenience**
+- **Explicit state over hidden logic**
+- **Failure is expected, not exceptional**
+- **Deterministic recovery over best-effort execution**
 ```
 
 
